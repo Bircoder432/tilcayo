@@ -19,7 +19,7 @@ CREATE TABLE resources (
 );
 
 CREATE TABLE permissions (
-    role_id BIGINT NOT NULL REFERENCES roles(id),
+    role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     schema_id BIGINT NOT NULL REFERENCES schemas(id),
     read BOOLEAN NOT NULL DEFAULT FALSE,
     write BOOLEAN NOT NULL DEFAULT FALSE,

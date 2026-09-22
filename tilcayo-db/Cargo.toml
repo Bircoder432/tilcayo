@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "migrate"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
+tilcayo-core.workspace = true
