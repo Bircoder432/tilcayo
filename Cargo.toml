@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["tilcayo-core", "tilcayo-db"]
+members = ["tilcayo-auth","tilcayo-core", "tilcayo-db"]
 
 [workspace.dependencies]
 tilcayo-core = { path = "tilcayo-core" }
