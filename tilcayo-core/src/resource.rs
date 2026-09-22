@@ -1,5 +1,6 @@
 use crate::{Schema, SchemaId, Value};
 
+#[derive(Clone, Copy)]
 pub struct ResourceId(pub usize);
 
 pub struct Resource {
