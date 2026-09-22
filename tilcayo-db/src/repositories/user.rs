@@ -10,14 +10,19 @@ impl<'a> UserRepository<'a> {
         Self { pool }
     }
 
-    pub async fn create(&self, role_id: &RoleId) -> Result<UserId, sqlx::Error> {
+    pub async fn create(
+        &self,
+        role_id: &RoleId,
+        password_hash: &str,
+    ) -> Result<UserId, sqlx::Error> {
         let id = sqlx::query_scalar!(
             r#"
-            INSERT INTO users (role_id)
-            VALUES ($1)
+            INSERT INTO users (role_id, password_hash)
+            VALUES ($1, $2)
             RETURNING id
             "#,
-            role_id.0 as i64
+            role_id.0 as i64,
+            password_hash,
         )
         .fetch_one(self.pool)
         .await?;
@@ -28,7 +33,7 @@ impl<'a> UserRepository<'a> {
     pub async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, sqlx::Error> {
         let user = sqlx::query!(
             r#"
-            SELECT role_id
+            SELECT role_id, password_hash
             FROM users
             WHERE id = $1
             "#,
@@ -42,8 +47,9 @@ impl<'a> UserRepository<'a> {
         };
 
         Ok(Some(User {
-            id: id.clone(),
+            id: UserId(id.0),
             role_id: RoleId(user.role_id as usize),
+            password_hash: user.password_hash,
         }))
     }
 
