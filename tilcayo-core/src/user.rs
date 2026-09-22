@@ -1,4 +1,4 @@
-use crate::role::RoleId;
+use crate::RoleId;
 
 pub struct UserId(pub usize);
 
