@@ -1089,11 +1089,15 @@ dependencies = [
 [[package]]
 name = "tilcayo-core"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "tilcayo-db"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "sqlx",
  "tilcayo-core",
  "tokio",

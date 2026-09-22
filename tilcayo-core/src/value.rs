@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Value {
     Int(i64),
     Float(f64),
@@ -8,6 +10,7 @@ pub enum Value {
     Object(HashMap<String, Value>),
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ValueType {
     Int,
     Float,

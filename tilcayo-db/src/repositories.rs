@@ -1,1 +1,2 @@
-mod role;
+pub mod role;
+pub mod schema;

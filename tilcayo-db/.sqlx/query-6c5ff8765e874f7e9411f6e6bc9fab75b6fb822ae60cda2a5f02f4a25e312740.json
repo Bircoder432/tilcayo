@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT schema_id, read, write\n            FROM permissions\n            WHERE role_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "schema_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "permissions",
+            "name": "schema_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "read",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "permissions",
+            "name": "read"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "write",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "permissions",
+            "name": "write"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6c5ff8765e874f7e9411f6e6bc9fab75b6fb822ae60cda2a5f02f4a25e312740"
+}
