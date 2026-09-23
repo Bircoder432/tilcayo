@@ -11,3 +11,4 @@ tilcayo-db.workspace = true
 tilcayo-core.workspace = true
 tilcayo-auth.workspace = true
 sqlx = "0.9.0"
+serde_json = "1.0.151"

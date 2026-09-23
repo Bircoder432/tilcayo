@@ -47,6 +47,16 @@ async fn main() {
 
     let protected = Router::new()
         .route("/auth/me", get(handlers::auth::me))
+        .route(
+            "/resources",
+            get(handlers::resources::list).post(handlers::resources::create),
+        )
+        .route(
+            "/resources/{id}",
+            get(handlers::resources::get)
+                .put(handlers::resources::update)
+                .delete(handlers::resources::delete),
+        )
         .route_layer(axum::middleware::from_fn_with_state(
             state.clone(),
             crate::middleware::auth,
