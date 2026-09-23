@@ -5,3 +5,12 @@ edition = "2024"
 
 [dependencies]
 argon2 = "0.6.0"
+thiserror = "2.0.20"
+tilcayo-core.workspace = true
+tilcayo-db.workspace = true
+sqlx = "0.9.0"
+jsonwebtoken.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }

@@ -1,6 +1,7 @@
 use sqlx::PgPool;
 use tilcayo_core::{RoleId, User, UserId};
 
+#[derive(Clone, Copy)]
 pub struct UserRepository<'a> {
     pool: &'a PgPool,
 }
