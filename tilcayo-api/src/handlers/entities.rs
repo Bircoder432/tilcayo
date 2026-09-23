@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tilcayo_core::{EntityId, Value};
 use tilcayo_db::repositories::{entity::EntityRepository, schema::SchemaRepository};
+use tracing::{error, info};
 
 use crate::{AppState, middleware::AuthUser};
 
@@ -154,7 +155,7 @@ pub async fn create(
     let schema = match schemas.find_by_name(&schema_name).await {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Database error finding schema by name: {:?}", e);
+            error!(schema_name = %schema_name, error = %e, "Database error finding schema by name");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
@@ -186,7 +187,7 @@ pub async fn create(
     let data = match serde_json::from_value::<Value>(payload) {
         Ok(d) => d,
         Err(e) => {
-            eprintln!("Deserialization error: {:?}", e);
+            error!(schema_name = %schema_name, error = %e, "Deserialization error");
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
@@ -202,7 +203,7 @@ pub async fn create(
     let entity_id = match entities.create(&schema_name, &schema.schema, &data).await {
         Ok(id) => id,
         Err(e) => {
-            eprintln!("Database error in create: {:?}", e);
+            error!(schema_name = %schema_name, error = %e, "Database error in create");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
@@ -223,6 +224,7 @@ pub async fn create(
             .into_response();
     };
 
+    info!(schema_name = %schema_name, entity_id = entity_id.0, "Entity created successfully");
     let response_data = serde_json::to_value(&data).expect("failed to serialize");
 
     (
@@ -332,7 +334,7 @@ pub async fn update(
     let schema = match schemas.find_by_name(&schema_name).await {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Database error finding schema by name: {:?}", e);
+            error!(schema_name = %schema_name, entity_id = id, error = %e, "Database error finding schema");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
@@ -364,7 +366,7 @@ pub async fn update(
     let data = match serde_json::from_value::<Value>(payload) {
         Ok(d) => d,
         Err(e) => {
-            eprintln!("Deserialization error: {:?}", e);
+            error!(schema_name = %schema_name, entity_id = id, error = %e, "Deserialization error");
             return (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
@@ -383,7 +385,7 @@ pub async fn update(
     {
         Ok(u) => u,
         Err(e) => {
-            eprintln!("Database error in update: {:?}", e);
+            error!(schema_name = %schema_name, entity_id = id, error = %e, "Database error in update");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
@@ -395,6 +397,7 @@ pub async fn update(
     };
 
     if updated.is_none() {
+        info!(schema_name = %schema_name, entity_id = id, "Entity update returned none (not found or invalid)");
         return (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {
@@ -404,6 +407,7 @@ pub async fn update(
             .into_response();
     }
 
+    info!(schema_name = %schema_name, entity_id = id, "Entity updated successfully");
     (
         StatusCode::OK,
         Json(serde_json::json!({
@@ -433,7 +437,7 @@ pub async fn delete(
     let schema = match schemas.find_by_name(&schema_name).await {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Database error finding schema by name: {:?}", e);
+            error!(schema_name = %schema_name, entity_id = id, error = %e, "Database error finding schema");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
@@ -465,9 +469,12 @@ pub async fn delete(
     let entities = EntityRepository::new(&state.database.pool);
 
     match entities.delete(&schema_name, &EntityId(id)).await {
-        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Ok(()) => {
+            info!(schema_name = %schema_name, entity_id = id, "Entity deleted successfully");
+            StatusCode::NO_CONTENT.into_response()
+        }
         Err(e) => {
-            eprintln!("Database error in delete: {:?}", e);
+            error!(schema_name = %schema_name, entity_id = id, error = %e, "Database error in delete");
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {

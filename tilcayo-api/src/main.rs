@@ -4,6 +4,8 @@ use axum::{
     Router,
     routing::{get, post},
 };
+use dotenvy::dotenv;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use tilcayo_auth::session::SessionService;
 use tilcayo_db::{Database, sessions::SessionStore};
@@ -20,8 +22,18 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
-    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET is not set");
+    dotenv().ok();
+
+    tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env())
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".into());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".into());
+    let bind_address = format!("{}:{}", host, port);
 
     let database = Database::connect(&database_url)
         .await
@@ -30,12 +42,15 @@ async fn main() {
     let admin_username = std::env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".into());
     let admin_password = std::env::var("ADMIN_PASSWORD").ok();
 
-    bootstrap::bootstrap(&database, &admin_username, admin_password.as_deref())
-        .await
-        .expect("failed to bootstrap application");
+    if let Err(e) =
+        bootstrap::bootstrap(&database, &admin_username, admin_password.as_deref()).await
+    {
+        tracing::error!("Failed to bootstrap application: {:?}", e);
+        panic!("Bootstrap failed");
+    }
 
-    let session_store =
-        SessionStore::new("redis://localhost").expect("failed to create session store");
+    let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".into());
+    let session_store = SessionStore::new(&redis_url).expect("failed to create session store");
 
     let state = Arc::new(AppState {
         database,
@@ -91,11 +106,11 @@ async fn main() {
         .merge(protected)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("failed to bind server");
 
-    println!("listening on http://0.0.0.0:3000");
+    tracing::info!("Listening on http://{}", bind_address);
 
     axum::serve(listener, app).await.expect("server error");
 }

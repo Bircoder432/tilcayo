@@ -12,3 +12,6 @@ tilcayo-core.workspace = true
 tilcayo-auth.workspace = true
 sqlx = "0.9.0"
 serde_json = "1.0.151"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+dotenvy = "0.15.7"
