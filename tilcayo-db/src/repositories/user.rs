@@ -11,6 +11,20 @@ impl<'a> UserRepository<'a> {
         Self { pool }
     }
 
+    pub async fn exists(&self) -> Result<bool, sqlx::Error> {
+        Ok(sqlx::query_scalar!(
+            r#"
+            SELECT EXISTS(
+                SELECT 1
+                FROM users
+            )
+            "#
+        )
+        .fetch_one(self.pool)
+        .await?
+        .unwrap_or(false))
+    }
+
     pub async fn create(
         &self,
         username: &str,

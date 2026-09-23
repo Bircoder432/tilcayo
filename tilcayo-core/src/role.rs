@@ -2,8 +2,10 @@ use std::collections::HashMap;
 
 use crate::{Permission, SchemaId};
 
+#[derive(Clone, Copy)]
 pub struct RoleId(pub usize);
 
+#[derive(Clone)]
 pub struct Role {
     pub id: RoleId,
     pub name: String,

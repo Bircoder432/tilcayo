@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use tilcayo_auth::password::hash_password;
-use tilcayo_core::{Permission, SchemaId, ValueType};
+use tilcayo_core::{SchemaId, ValueType};
 use tilcayo_db::{
     Database,
     repositories::{role::RoleRepository, schema::SchemaRepository, user::UserRepository},
@@ -16,7 +16,7 @@ const SCHEMA_SCHEMA_NAME: &str = "schema";
 pub async fn bootstrap(
     database: &Database,
     admin_username: &str,
-    admin_password: &str,
+    admin_password: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let schemas = SchemaRepository::new(&database.pool);
 
@@ -63,6 +63,7 @@ pub async fn bootstrap(
 
     let admin_role_id = match roles.find_by_name(ADMIN_ROLE_NAME).await? {
         Some(role) => role.id,
+
         None => roles.create(ADMIN_ROLE_NAME, &HashMap::new()).await?,
     };
 
@@ -72,22 +73,17 @@ pub async fn bootstrap(
             .await?;
     }
 
-    let has_users = sqlx::query_scalar!(
-        r#"
-        SELECT EXISTS(
-            SELECT 1
-            FROM users
-        )
-        "#
-    )
-    .fetch_one(&database.pool)
-    .await?
-    .unwrap_or(false);
+    let users = UserRepository::new(&database.pool);
 
-    if !has_users {
+    if !users.exists().await? {
+        let admin_password = admin_password.ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "ADMIN_PASSWORD is not set",
+            )
+        })?;
+
         let password_hash = hash_password(admin_password)?;
-
-        let users = UserRepository::new(&database.pool);
 
         users
             .create(admin_username, &admin_role_id, &password_hash)
