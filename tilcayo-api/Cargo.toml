@@ -15,3 +15,5 @@ serde_json = "1.0.151"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 dotenvy = "0.15.7"
+utoipa = { version = "5.0.0", features = ["axum_extras", "preserve_order"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }

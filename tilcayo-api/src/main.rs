@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use axum::{
     Router,
-    routing::{get, post},
+    routing::{delete, get, post, put},
 };
 use dotenvy::dotenv;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use tilcayo_auth::session::SessionService;
 use tilcayo_db::{Database, sessions::SessionStore};
@@ -19,6 +21,58 @@ pub struct AppState {
     pub sessions: SessionService,
     pub jwt_secret: Vec<u8>,
 }
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        handlers::auth::login,
+        handlers::auth::refresh,
+        handlers::auth::me,
+        handlers::users::list,
+        handlers::users::get,
+        handlers::users::create,
+        handlers::roles::list,
+        handlers::roles::get,
+        handlers::roles::create,
+        handlers::roles::grant_permissions,
+        handlers::schemas::list,
+        handlers::schemas::get,
+        handlers::schemas::create,
+        handlers::schemas::update,
+        handlers::schemas::delete,
+        handlers::entities::list,
+        handlers::entities::get,
+        handlers::entities::create,
+        handlers::entities::update,
+        handlers::entities::delete,
+    ),
+    components(
+        schemas(
+            handlers::auth::LoginRequest,
+            handlers::auth::LoginResponse,
+            handlers::auth::RefreshRequest,
+            handlers::auth::MeResponse,
+            handlers::auth::ErrorResponse,
+            handlers::users::CreateUserRequest,
+            handlers::roles::CreateRoleRequest,
+            handlers::roles::GrantPermissionsRequest,
+            handlers::roles::SchemaPermission,
+            handlers::schemas::CreateSchemaRequest,
+            handlers::schemas::UpdateSchemaRequest,
+            handlers::schemas::SchemaResponse,
+            handlers::entities::EntityListResponse,
+            handlers::entities::ErrorResponse,
+        )
+    ),
+    tags(
+        (name = "auth", description = "Authentication and sessions"),
+        (name = "users", description = "User management"),
+        (name = "roles", description = "Role and permission management"),
+        (name = "schemas", description = "Data schema management"),
+        (name = "entities", description = "Dynamic entities (CRUD by schema)")
+    )
+)]
+struct ApiDoc;
 
 #[tokio::main]
 async fn main() {
@@ -103,6 +157,7 @@ async fn main() {
         .route("/", get(handlers::health))
         .route("/auth/login", post(handlers::auth::login))
         .route("/auth/refresh", post(handlers::auth::refresh))
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .merge(protected)
         .with_state(state);
 
@@ -111,6 +166,7 @@ async fn main() {
         .expect("failed to bind server");
 
     tracing::info!("Listening on http://{}", bind_address);
+    tracing::info!("Swagger UI available at http://{}/swagger-ui", bind_address);
 
     axum::serve(listener, app).await.expect("server error");
 }

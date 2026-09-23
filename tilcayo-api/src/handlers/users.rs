@@ -13,21 +13,33 @@ use tilcayo_db::repositories::{
     role::RoleRepository, schema::SchemaRepository, user::UserRepository,
 };
 use tracing::{error, info};
+use utoipa::ToSchema;
 
 use crate::{AppState, middleware::AuthUser};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateUserRequest {
     username: String,
     role_id: usize,
     password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
     error: &'static str,
 }
 
+#[utoipa::path(
+    get,
+    path = "/users",
+    tag = "users",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "List of users", body = Vec<serde_json::Value>),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn list(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
@@ -84,6 +96,21 @@ pub async fn list(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/{id}",
+    tag = "users",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = usize, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User data", body = serde_json::Value),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn get(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
@@ -148,6 +175,20 @@ pub async fn get(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/users",
+    tag = "users",
+    security(("bearer_auth" = [])),
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "User successfully created", body = serde_json::Value),
+        (status = 400, description = "Role not found", body = ErrorResponse),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 409, description = "Username already exists", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn create(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,

@@ -11,31 +11,43 @@ use serde::{Deserialize, Serialize};
 use tilcayo_core::{RoleId, SchemaId};
 use tilcayo_db::repositories::{role::RoleRepository, schema::SchemaRepository};
 use tracing::{error, info};
+use utoipa::ToSchema;
 
 use crate::{AppState, middleware::AuthUser};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateRoleRequest {
     name: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct SchemaPermission {
     schema_id: usize,
     read: bool,
     write: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct GrantPermissionsRequest {
     permissions: Vec<SchemaPermission>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
     error: &'static str,
 }
 
+#[utoipa::path(
+    get,
+    path = "/roles",
+    tag = "roles",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "List of roles", body = Vec<serde_json::Value>),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn list(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
@@ -91,6 +103,21 @@ pub async fn list(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/roles/{id}",
+    tag = "roles",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = usize, Path, description = "Role ID")
+    ),
+    responses(
+        (status = 200, description = "Role data with permissions", body = serde_json::Value),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 404, description = "Role not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn get(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
@@ -167,6 +194,19 @@ pub async fn get(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/roles",
+    tag = "roles",
+    security(("bearer_auth" = [])),
+    request_body = CreateRoleRequest,
+    responses(
+        (status = 201, description = "Role successfully created", body = serde_json::Value),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 409, description = "Role name already exists", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn create(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
@@ -231,6 +271,22 @@ pub async fn create(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/roles/{id}/permissions",
+    tag = "roles",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = usize, Path, description = "Role ID")
+    ),
+    request_body = GrantPermissionsRequest,
+    responses(
+        (status = 200, description = "Permissions successfully granted"),
+        (status = 400, description = "Role or schema not found", body = ErrorResponse),
+        (status = 403, description = "Access denied", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
 pub async fn grant_permissions(
     State(state): State<Arc<AppState>>,
     Extension(auth_user): Extension<AuthUser>,
