@@ -9,6 +9,7 @@ const REFRESH_TOKEN_TTL: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 
 pub struct RefreshSession {
     pub session_id: String,
+    pub user_id: UserId,
     pub refresh_token: String,
 }
 
@@ -37,9 +38,11 @@ impl SessionService {
 
         Ok(RefreshSession {
             session_id: session_id.to_owned(),
+            user_id: UserId(user_id.0),
             refresh_token,
         })
     }
+
     pub async fn refresh(
         &self,
         session_id: &str,
@@ -76,6 +79,7 @@ impl SessionService {
 
         Ok(Some(RefreshSession {
             session_id: session_id.to_owned(),
+            user_id: session.user_id,
             refresh_token: new_refresh_token,
         }))
     }

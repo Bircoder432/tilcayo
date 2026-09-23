@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO permissions (\n                    role_id,\n                    schema_id,\n                    read,\n                    write\n                )\n                VALUES ($1, $2, $3, $4)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "98ee866d7e30093dd24c1a7615322992c26fc201b61e8dd95ffb85e8c6ad8c5e"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO permissions (\n                role_id,\n                schema_id,\n                read,\n                write\n            )\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (role_id, schema_id)\n            DO UPDATE SET\n                read = EXCLUDED.read,\n                write = EXCLUDED.write\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "13e1d42fbd9e53880bc7b0fbda5b5426d409e04c96b19ac0971e93ce19bf955e"
+}

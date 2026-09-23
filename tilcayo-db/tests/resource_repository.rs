@@ -12,14 +12,17 @@ async fn database() -> Database {
         .unwrap()
 }
 
-async fn create_schema(db: &Database) -> SchemaId {
+async fn create_schema(db: &Database, name: &str) -> SchemaId {
     let repository = SchemaRepository::new(&db.pool);
 
     repository
-        .create(&ValueType::Object(HashMap::from([
-            ("name".into(), ValueType::Text),
-            ("age".into(), ValueType::Int),
-        ])))
+        .create(
+            name,
+            &ValueType::Object(HashMap::from([
+                ("name".into(), ValueType::Text),
+                ("age".into(), ValueType::Int),
+            ])),
+        )
         .await
         .unwrap()
 }
@@ -29,7 +32,7 @@ async fn create_resource() {
     let db = database().await;
     let repository = ResourceRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "resource-test-create").await;
 
     let data = Value::Object(HashMap::from([
         ("name".into(), Value::Text("Vadim".into())),
@@ -57,7 +60,7 @@ async fn create_invalid_resource() {
     let db = database().await;
     let repository = ResourceRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "resource-test-invalid").await;
 
     let data = Value::Object(HashMap::from([
         ("name".into(), Value::Text("Vadim".into())),
@@ -79,7 +82,7 @@ async fn find_resource() {
     let db = database().await;
     let repository = ResourceRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "resource-test-find").await;
 
     let data = Value::Object(HashMap::from([
         ("name".into(), Value::Text("Vadim".into())),
@@ -122,7 +125,7 @@ async fn delete_resource() {
     let db = database().await;
     let repository = ResourceRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "resource-test-delete").await;
 
     let data = Value::Object(HashMap::from([
         ("name".into(), Value::Text("Vadim".into())),

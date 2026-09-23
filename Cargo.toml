@@ -1,9 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["tilcayo-auth","tilcayo-core", "tilcayo-db"]
+members = ["tilcayo-api","tilcayo-auth","tilcayo-core", "tilcayo-db"]
 
 [workspace.dependencies]
 tilcayo-core = { path = "tilcayo-core" }
 tilcayo-db = { path = "tilcayo-db" }
+tilcayo-auth = { path = "tilcayo-auth" }
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }
 serde = { version = "1.0.229", features = ["derive"] }

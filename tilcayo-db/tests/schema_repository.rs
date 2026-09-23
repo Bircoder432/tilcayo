@@ -4,7 +4,7 @@ use tilcayo_core::{SchemaId, ValueType};
 use tilcayo_db::{Database, repositories::schema::SchemaRepository};
 
 async fn database() -> Database {
-    Database::connect("postgres://tilcayo:tilcayo@localhost/tilcayo")
+    Database::connect("postgres://tilcayo:tilcayo@localhost:5432/tilcayo")
         .await
         .unwrap()
 }
@@ -20,7 +20,7 @@ async fn create_schema() {
     ]));
 
     let id = repository
-        .create(&schema)
+        .create("schema-test-create", &schema)
         .await
         .expect("failed to create schema");
 
@@ -39,7 +39,10 @@ async fn find_schema() {
         ("age".into(), ValueType::Int),
     ]));
 
-    let id = repository.create(&schema).await.unwrap();
+    let id = repository
+        .create("schema-test-find", &schema)
+        .await
+        .unwrap();
 
     let found = repository
         .find_by_id(&id)
@@ -47,11 +50,15 @@ async fn find_schema() {
         .unwrap()
         .expect("schema not found");
 
+    assert_eq!(found.id.0, id.0);
+    assert_eq!(found.name, "schema-test-find");
+
     let ValueType::Object(fields) = found.schema else {
         panic!("expected object schema");
     };
 
     assert!(matches!(fields.get("name"), Some(ValueType::Text)));
+
     assert!(matches!(fields.get("age"), Some(ValueType::Int)));
 
     repository.delete(&id).await.unwrap();
@@ -74,7 +81,10 @@ async fn delete_schema() {
 
     let schema = ValueType::Text;
 
-    let id = repository.create(&schema).await.unwrap();
+    let id = repository
+        .create("schema-test-delete", &schema)
+        .await
+        .unwrap();
 
     repository.delete(&id).await.unwrap();
 

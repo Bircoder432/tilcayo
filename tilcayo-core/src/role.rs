@@ -6,6 +6,7 @@ pub struct RoleId(pub usize);
 
 pub struct Role {
     pub id: RoleId,
+    pub name: String,
     pub permissions: HashMap<SchemaId, Permission>,
 }
 
@@ -35,6 +36,7 @@ mod tests {
 
         let role = Role {
             id: RoleId(1),
+            name: "test".into(),
             permissions: HashMap::from([(
                 schema_id,
                 Permission {
@@ -52,6 +54,7 @@ mod tests {
     fn role_cannot_access_schema_without_permission() {
         let role = Role {
             id: RoleId(1),
+            name: "test".into(),
             permissions: HashMap::new(),
         };
 

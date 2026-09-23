@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub enum Value {
     Int(i64),
     Float(f64),
+    Bool(bool),
     Text(String),
     List(Vec<Value>),
     Object(HashMap<String, Value>),
@@ -14,7 +15,9 @@ pub enum Value {
 pub enum ValueType {
     Int,
     Float,
+    Bool,
     Text,
+    Any,
     List(Box<ValueType>),
     Object(HashMap<String, ValueType>),
 }
@@ -22,8 +25,11 @@ pub enum ValueType {
 impl ValueType {
     pub fn matches(&self, value: &Value) -> bool {
         match (self, value) {
+            (ValueType::Any, _) => true,
+
             (ValueType::Int, Value::Int(_)) => true,
             (ValueType::Float, Value::Float(_)) => true,
+            (ValueType::Bool, Value::Bool(_)) => true,
             (ValueType::Text, Value::Text(_)) => true,
 
             (ValueType::List(value_type), Value::List(values)) => {
@@ -52,9 +58,21 @@ mod tests {
     fn primitive_types() {
         assert!(ValueType::Int.matches(&Value::Int(1)));
         assert!(ValueType::Float.matches(&Value::Float(1.0)));
+        assert!(ValueType::Bool.matches(&Value::Bool(true)));
         assert!(ValueType::Text.matches(&Value::Text("text".into())));
 
         assert!(!ValueType::Int.matches(&Value::Text("1".into())));
+        assert!(!ValueType::Bool.matches(&Value::Int(1)));
+    }
+
+    #[test]
+    fn any_type() {
+        assert!(ValueType::Any.matches(&Value::Int(1)));
+        assert!(ValueType::Any.matches(&Value::Float(1.0)));
+        assert!(ValueType::Any.matches(&Value::Bool(true)));
+        assert!(ValueType::Any.matches(&Value::Text("text".into())));
+        assert!(ValueType::Any.matches(&Value::List(vec![])));
+        assert!(ValueType::Any.matches(&Value::Object(HashMap::new())));
     }
 
     #[test]

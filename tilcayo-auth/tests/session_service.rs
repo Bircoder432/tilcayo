@@ -18,7 +18,7 @@ async fn creates_refresh_session() {
 
     assert_eq!(session.session_id, session_id);
     assert_eq!(session.refresh_token.len(), 64);
-
+    assert_eq!(session.user_id.0, 42);
     let store = SessionStore::new("redis://localhost").expect("failed to create session store");
 
     let stored = store

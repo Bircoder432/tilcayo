@@ -5,5 +5,6 @@ pub struct SchemaId(pub usize);
 
 pub struct Schema {
     pub id: SchemaId,
+    pub name: String,
     pub schema: ValueType,
 }

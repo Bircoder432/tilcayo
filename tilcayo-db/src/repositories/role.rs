@@ -14,20 +14,33 @@ impl<'a> RoleRepository<'a> {
 
     pub async fn create(
         &self,
+        name: &str,
         permissions: &HashMap<SchemaId, Permission>,
     ) -> Result<RoleId, sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
 
-        let role_id = sqlx::query_scalar!("INSERT INTO roles DEFAULT VALUES RETURNING id")
-            .fetch_one(&mut *transaction)
-            .await?;
+        let role_id = sqlx::query_scalar!(
+            r#"
+            INSERT INTO roles (name)
+            VALUES ($1)
+            RETURNING id
+            "#,
+            name,
+        )
+        .fetch_one(&mut *transaction)
+        .await?;
 
         for (schema_id, permission) in permissions {
             sqlx::query!(
-                "
-                INSERT INTO permissions (role_id, schema_id, read, write)
+                r#"
+                INSERT INTO permissions (
+                    role_id,
+                    schema_id,
+                    read,
+                    write
+                )
                 VALUES ($1, $2, $3, $4)
-                ",
+                "#,
                 role_id,
                 schema_id.0 as i64,
                 permission.read,
@@ -43,21 +56,28 @@ impl<'a> RoleRepository<'a> {
     }
 
     pub async fn find_by_id(&self, id: &RoleId) -> Result<Option<Role>, sqlx::Error> {
-        let exists = sqlx::query_scalar!("SELECT id FROM roles WHERE id = $1", id.0 as i64)
-            .fetch_optional(self.pool)
-            .await?;
+        let role = sqlx::query!(
+            r#"
+            SELECT id, name
+            FROM roles
+            WHERE id = $1
+            "#,
+            id.0 as i64,
+        )
+        .fetch_optional(self.pool)
+        .await?;
 
-        let Some(role_id) = exists else {
+        let Some(role) = role else {
             return Ok(None);
         };
 
         let permissions = sqlx::query!(
-            "
+            r#"
             SELECT schema_id, read, write
             FROM permissions
             WHERE role_id = $1
-            ",
-            role_id
+            "#,
+            role.id,
         )
         .fetch_all(self.pool)
         .await?
@@ -74,9 +94,87 @@ impl<'a> RoleRepository<'a> {
         .collect();
 
         Ok(Some(Role {
-            id: RoleId(role_id as usize),
+            id: RoleId(role.id as usize),
+            name: role.name,
             permissions,
         }))
+    }
+
+    pub async fn find_by_name(&self, name: &str) -> Result<Option<Role>, sqlx::Error> {
+        let role = sqlx::query!(
+            r#"
+            SELECT id, name
+            FROM roles
+            WHERE name = $1
+            "#,
+            name,
+        )
+        .fetch_optional(self.pool)
+        .await?;
+
+        let Some(role) = role else {
+            return Ok(None);
+        };
+
+        let permissions = sqlx::query!(
+            r#"
+            SELECT schema_id, read, write
+            FROM permissions
+            WHERE role_id = $1
+            "#,
+            role.id,
+        )
+        .fetch_all(self.pool)
+        .await?
+        .into_iter()
+        .map(|permission| {
+            (
+                SchemaId(permission.schema_id as usize),
+                Permission {
+                    read: permission.read,
+                    write: permission.write,
+                },
+            )
+        })
+        .collect();
+
+        Ok(Some(Role {
+            id: RoleId(role.id as usize),
+            name: role.name,
+            permissions,
+        }))
+    }
+
+    pub async fn set_permission(
+        &self,
+        role_id: &RoleId,
+        schema_id: &SchemaId,
+        read: bool,
+        write: bool,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            INSERT INTO permissions (
+                role_id,
+                schema_id,
+                read,
+                write
+            )
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (role_id, schema_id)
+            DO UPDATE SET
+                read = EXCLUDED.read,
+                write = EXCLUDED.write
+            "#,
+            role_id.0 as i64,
+            schema_id.0 as i64,
+            read,
+            write,
+        )
+        .execute(self.pool)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn delete(&self, id: &RoleId) -> Result<(), sqlx::Error> {

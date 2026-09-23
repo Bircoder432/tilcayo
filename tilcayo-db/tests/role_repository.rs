@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use tilcayo_core::{Permission, RoleId, SchemaId};
-use tilcayo_db::{Database, repositories::role::RoleRepository};
+use tilcayo_db::{
+    Database,
+    repositories::{role::RoleRepository, schema::SchemaRepository},
+};
 
 async fn database() -> Database {
     Database::connect("postgres://tilcayo:tilcayo@localhost:5432/tilcayo")
@@ -9,19 +12,11 @@ async fn database() -> Database {
         .unwrap()
 }
 
-async fn create_schema(db: &Database) -> SchemaId {
-    let id = sqlx::query_scalar!(
-        r#"
-        INSERT INTO schemas (schema)
-        VALUES ('{}'::jsonb)
-        RETURNING id
-        "#
-    )
-    .fetch_one(&db.pool)
-    .await
-    .unwrap();
-
-    SchemaId(id as usize)
+async fn create_schema(db: &Database, name: &str) -> SchemaId {
+    SchemaRepository::new(&db.pool)
+        .create(name, &tilcayo_core::ValueType::Object(HashMap::new()))
+        .await
+        .unwrap()
 }
 
 #[tokio::test]
@@ -29,7 +24,7 @@ async fn create_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "role-test-schema-create").await;
 
     let permissions = HashMap::from([(
         schema_id,
@@ -40,7 +35,7 @@ async fn create_role() {
     )]);
 
     let role_id = repository
-        .create(&permissions)
+        .create("role-test-create", &permissions)
         .await
         .expect("failed to create role");
 
@@ -48,8 +43,8 @@ async fn create_role() {
 
     repository.delete(&role_id).await.unwrap();
 
-    sqlx::query!("DELETE FROM schemas WHERE id = $1", schema_id.0 as i64)
-        .execute(&db.pool)
+    SchemaRepository::new(&db.pool)
+        .delete(&schema_id)
         .await
         .unwrap();
 }
@@ -59,8 +54,9 @@ async fn find_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id_1 = create_schema(&db).await;
-    let schema_id_2 = create_schema(&db).await;
+    let schema_id_1 = create_schema(&db, "role-test-schema-find-1").await;
+
+    let schema_id_2 = create_schema(&db, "role-test-schema-find-2").await;
 
     let permissions = HashMap::from([
         (
@@ -79,7 +75,10 @@ async fn find_role() {
         ),
     ]);
 
-    let role_id = repository.create(&permissions).await.unwrap();
+    let role_id = repository
+        .create("role-test-find", &permissions)
+        .await
+        .unwrap();
 
     let role = repository
         .find_by_id(&role_id)
@@ -88,6 +87,7 @@ async fn find_role() {
         .expect("role not found");
 
     assert_eq!(role.id.0, role_id.0);
+    assert_eq!(role.name, "role-test-find");
     assert_eq!(role.permissions.len(), 2);
 
     assert!(role.permissions[&schema_id_1].read);
@@ -98,14 +98,15 @@ async fn find_role() {
 
     repository.delete(&role_id).await.unwrap();
 
-    sqlx::query!(
-        "DELETE FROM schemas WHERE id IN ($1, $2)",
-        schema_id_1.0 as i64,
-        schema_id_2.0 as i64,
-    )
-    .execute(&db.pool)
-    .await
-    .unwrap();
+    SchemaRepository::new(&db.pool)
+        .delete(&schema_id_1)
+        .await
+        .unwrap();
+
+    SchemaRepository::new(&db.pool)
+        .delete(&schema_id_2)
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -123,7 +124,7 @@ async fn delete_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db).await;
+    let schema_id = create_schema(&db, "role-test-schema-delete").await;
 
     let permissions = HashMap::from([(
         schema_id,
@@ -133,7 +134,10 @@ async fn delete_role() {
         },
     )]);
 
-    let role_id = repository.create(&permissions).await.unwrap();
+    let role_id = repository
+        .create("role-test-delete", &permissions)
+        .await
+        .unwrap();
 
     repository.delete(&role_id).await.unwrap();
 
@@ -151,8 +155,8 @@ async fn delete_role() {
 
     assert_eq!(permissions_count, Some(0));
 
-    sqlx::query!("DELETE FROM schemas WHERE id = $1", schema_id.0 as i64)
-        .execute(&db.pool)
+    SchemaRepository::new(&db.pool)
+        .delete(&schema_id)
         .await
         .unwrap();
 }

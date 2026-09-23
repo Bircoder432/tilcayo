@@ -1,28 +1,28 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO schemas (schema)\n            VALUES ($1)\n            RETURNING id\n            ",
+  "query": "\n            SELECT schema\n            FROM schemas\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
-        "type_info": "Int8",
+        "name": "schema",
+        "type_info": "Jsonb",
         "origin": {
           "Table": {
             "table": "schemas",
-            "name": "id"
+            "name": "schema"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "Jsonb"
+        "Int8"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "10e0536a3e58322c188eaf489702ef0ab86cb944678a9d9a70283d3a591f9b1d"
+  "hash": "8c7bcecb2dd0109f0342528a90348bd6e9758c85e134f56c20ea53632a111661"
 }

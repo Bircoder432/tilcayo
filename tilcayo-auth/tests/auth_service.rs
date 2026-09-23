@@ -3,7 +3,7 @@ use tilcayo_auth::service::AuthService;
 use tilcayo_core::RoleId;
 use tilcayo_db::repositories::{role::RoleRepository, user::UserRepository};
 
-async fn setup() -> (tilcayo_db::Database, RoleId) {
+async fn setup(role_name: &str) -> (tilcayo_db::Database, RoleId) {
     let database = tilcayo_db::Database::connect("postgres://tilcayo:tilcayo@localhost/tilcayo")
         .await
         .expect("failed to connect to database");
@@ -13,7 +13,7 @@ async fn setup() -> (tilcayo_db::Database, RoleId) {
     let permissions = std::collections::HashMap::new();
 
     let role_id = roles
-        .create(&permissions)
+        .create(role_name, &permissions)
         .await
         .expect("failed to create role");
 
@@ -22,7 +22,7 @@ async fn setup() -> (tilcayo_db::Database, RoleId) {
 
 #[tokio::test]
 async fn authenticate_with_correct_password() {
-    let (database, role_id) = setup().await;
+    let (database, role_id) = setup("auth-test-role-correct-password").await;
 
     let username = "auth-test-correct-password";
     let password = "correct password";
@@ -32,7 +32,7 @@ async fn authenticate_with_correct_password() {
     let users = UserRepository::new(&database.pool);
 
     let user_id = users
-        .create(&username, &role_id, &password_hash)
+        .create(username, &role_id, &password_hash)
         .await
         .expect("failed to create user");
 
@@ -49,12 +49,17 @@ async fn authenticate_with_correct_password() {
 
     users.delete(&user_id).await.expect("failed to delete user");
 
+    RoleRepository::new(&database.pool)
+        .delete(&role_id)
+        .await
+        .expect("failed to delete role");
+
     database.pool.close().await;
 }
 
 #[tokio::test]
 async fn authenticate_with_wrong_password() {
-    let (database, role_id) = setup().await;
+    let (database, role_id) = setup("auth-test-role-wrong-password").await;
 
     let username = "auth-test-wrong-password";
 
@@ -63,7 +68,7 @@ async fn authenticate_with_wrong_password() {
     let users = UserRepository::new(&database.pool);
 
     let user_id = users
-        .create(&username, &role_id, &password_hash)
+        .create(username, &role_id, &password_hash)
         .await
         .expect("failed to create user");
 
@@ -78,12 +83,17 @@ async fn authenticate_with_wrong_password() {
 
     users.delete(&user_id).await.expect("failed to delete user");
 
+    RoleRepository::new(&database.pool)
+        .delete(&role_id)
+        .await
+        .expect("failed to delete role");
+
     database.pool.close().await;
 }
 
 #[tokio::test]
 async fn authenticate_unknown_username() {
-    let (database, role_id) = setup().await;
+    let (database, role_id) = setup("auth-test-role-unknown-username").await;
 
     let username = "auth-test-unknown-username";
 
@@ -92,7 +102,7 @@ async fn authenticate_unknown_username() {
     let users = UserRepository::new(&database.pool);
 
     let user_id = users
-        .create(&username, &role_id, &password_hash)
+        .create(username, &role_id, &password_hash)
         .await
         .expect("failed to create user");
 
@@ -106,6 +116,11 @@ async fn authenticate_unknown_username() {
     assert!(user.is_none());
 
     users.delete(&user_id).await.expect("failed to delete user");
+
+    RoleRepository::new(&database.pool)
+        .delete(&role_id)
+        .await
+        .expect("failed to delete role");
 
     database.pool.close().await;
 }
