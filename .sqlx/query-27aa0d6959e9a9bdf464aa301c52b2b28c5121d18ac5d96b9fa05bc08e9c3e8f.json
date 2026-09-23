@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE schemas\n            SET name = $1, schema = $2\n            WHERE id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Jsonb",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "27aa0d6959e9a9bdf464aa301c52b2b28c5121d18ac5d96b9fa05bc08e9c3e8f"
+}

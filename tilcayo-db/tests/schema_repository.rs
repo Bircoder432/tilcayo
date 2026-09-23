@@ -20,7 +20,7 @@ async fn create_schema() {
     ]));
 
     let id = repository
-        .create("schema-test-create", &schema)
+        .create("schema_test_create", &schema)
         .await
         .expect("failed to create schema");
 
@@ -40,7 +40,7 @@ async fn find_schema() {
     ]));
 
     let id = repository
-        .create("schema-test-find", &schema)
+        .create("schema_test_find", &schema)
         .await
         .unwrap();
 
@@ -51,14 +51,13 @@ async fn find_schema() {
         .expect("schema not found");
 
     assert_eq!(found.id.0, id.0);
-    assert_eq!(found.name, "schema-test-find");
+    assert_eq!(found.name, "schema_test_find");
 
     let ValueType::Object(fields) = found.schema else {
         panic!("expected object schema");
     };
 
     assert!(matches!(fields.get("name"), Some(ValueType::Text)));
-
     assert!(matches!(fields.get("age"), Some(ValueType::Int)));
 
     repository.delete(&id).await.unwrap();
@@ -82,7 +81,7 @@ async fn delete_schema() {
     let schema = ValueType::Text;
 
     let id = repository
-        .create("schema-test-delete", &schema)
+        .create("schema_test_delete", &schema)
         .await
         .unwrap();
 

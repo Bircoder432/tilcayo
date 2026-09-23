@@ -102,4 +102,25 @@ impl<'a> UserRepository<'a> {
 
         Ok(())
     }
+    pub async fn find_all(&self) -> Result<Vec<User>, sqlx::Error> {
+        let users = sqlx::query!(
+            r#"
+            SELECT id, username, role_id, password_hash
+            FROM users
+            ORDER BY id
+            "#
+        )
+        .fetch_all(self.pool)
+        .await?;
+
+        Ok(users
+            .into_iter()
+            .map(|u| User {
+                id: UserId(u.id as usize),
+                username: u.username,
+                role_id: RoleId(u.role_id as usize),
+                password_hash: u.password_hash,
+            })
+            .collect())
+    }
 }

@@ -184,4 +184,47 @@ impl<'a> RoleRepository<'a> {
 
         Ok(())
     }
+    pub async fn find_all(&self) -> Result<Vec<Role>, sqlx::Error> {
+        let roles = sqlx::query!(
+            r#"
+            SELECT id, name
+            FROM roles
+            ORDER BY id
+            "#
+        )
+        .fetch_all(self.pool)
+        .await?;
+
+        let mut result = Vec::new();
+        for r in roles {
+            let permissions = sqlx::query!(
+                r#"
+                SELECT schema_id, read, write
+                FROM permissions
+                WHERE role_id = $1
+                "#,
+                r.id,
+            )
+            .fetch_all(self.pool)
+            .await?
+            .into_iter()
+            .map(|p| {
+                (
+                    SchemaId(p.schema_id as usize),
+                    Permission {
+                        read: p.read,
+                        write: p.write,
+                    },
+                )
+            })
+            .collect();
+
+            result.push(Role {
+                id: RoleId(r.id as usize),
+                name: r.name,
+                permissions,
+            });
+        }
+        Ok(result)
+    }
 }

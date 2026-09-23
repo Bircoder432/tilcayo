@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 
 use tilcayo_auth::password::hash_password;
-use tilcayo_core::{SchemaId, ValueType};
+use tilcayo_core::ValueType;
 use tilcayo_db::{
     Database,
     repositories::{role::RoleRepository, schema::SchemaRepository, user::UserRepository},
 };
 
 const ADMIN_ROLE_NAME: &str = "admin";
-
-const USER_SCHEMA_NAME: &str = "user";
-const ROLE_SCHEMA_NAME: &str = "role";
-const SCHEMA_SCHEMA_NAME: &str = "schema";
+const USERS_SCHEMA_NAME: &str = "users";
+const ROLES_SCHEMA_NAME: &str = "roles";
+const SCHEMAS_SCHEMA_NAME: &str = "schemas";
 
 pub async fn bootstrap(
     database: &Database,
@@ -22,7 +21,7 @@ pub async fn bootstrap(
 
     ensure_schema(
         &schemas,
-        USER_SCHEMA_NAME,
+        USERS_SCHEMA_NAME,
         ValueType::Object(HashMap::from([
             ("username".into(), ValueType::Text),
             ("role_id".into(), ValueType::Int),
@@ -32,24 +31,14 @@ pub async fn bootstrap(
 
     ensure_schema(
         &schemas,
-        ROLE_SCHEMA_NAME,
-        ValueType::Object(HashMap::from([
-            ("name".into(), ValueType::Text),
-            (
-                "permissions".into(),
-                ValueType::List(Box::new(ValueType::Object(HashMap::from([
-                    ("schema_id".into(), ValueType::Int),
-                    ("read".into(), ValueType::Bool),
-                    ("write".into(), ValueType::Bool),
-                ])))),
-            ),
-        ])),
+        ROLES_SCHEMA_NAME,
+        ValueType::Object(HashMap::from([("name".into(), ValueType::Text)])),
     )
     .await?;
 
     ensure_schema(
         &schemas,
-        SCHEMA_SCHEMA_NAME,
+        SCHEMAS_SCHEMA_NAME,
         ValueType::Object(HashMap::from([
             ("name".into(), ValueType::Text),
             ("schema".into(), ValueType::Any),
@@ -58,12 +47,10 @@ pub async fn bootstrap(
     .await?;
 
     let schema_ids = schemas.find_all_ids().await?;
-
     let roles = RoleRepository::new(&database.pool);
 
     let admin_role_id = match roles.find_by_name(ADMIN_ROLE_NAME).await? {
         Some(role) => role.id,
-
         None => roles.create(ADMIN_ROLE_NAME, &HashMap::new()).await?,
     };
 
@@ -97,10 +84,9 @@ async fn ensure_schema(
     schemas: &SchemaRepository<'_>,
     name: &str,
     schema: ValueType,
-) -> Result<SchemaId, sqlx::Error> {
+) -> Result<tilcayo_core::SchemaId, sqlx::Error> {
     if let Some(schema) = schemas.find_by_name(name).await? {
         return Ok(schema.id);
     }
-
     schemas.create(name, &schema).await
 }

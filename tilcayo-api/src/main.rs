@@ -21,7 +21,6 @@ pub struct AppState {
 #[tokio::main]
 async fn main() {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
-
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET is not set");
 
     let database = Database::connect(&database_url)
@@ -29,7 +28,6 @@ async fn main() {
         .expect("failed to connect to database");
 
     let admin_username = std::env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".into());
-
     let admin_password = std::env::var("ADMIN_PASSWORD").ok();
 
     bootstrap::bootstrap(&database, &admin_username, admin_password.as_deref())
@@ -48,14 +46,38 @@ async fn main() {
     let protected = Router::new()
         .route("/auth/me", get(handlers::auth::me))
         .route(
-            "/resources",
-            get(handlers::resources::list).post(handlers::resources::create),
+            "/users",
+            get(handlers::users::list).post(handlers::users::create),
+        )
+        .route("/users/{id}", get(handlers::users::get))
+        .route(
+            "/roles",
+            get(handlers::roles::list).post(handlers::roles::create),
+        )
+        .route("/roles/{id}", get(handlers::roles::get))
+        .route(
+            "/roles/{id}/permissions",
+            post(handlers::roles::grant_permissions),
         )
         .route(
-            "/resources/{id}",
-            get(handlers::resources::get)
-                .put(handlers::resources::update)
-                .delete(handlers::resources::delete),
+            "/schemas",
+            get(handlers::schemas::list).post(handlers::schemas::create),
+        )
+        .route(
+            "/schemas/{id}",
+            get(handlers::schemas::get)
+                .put(handlers::schemas::update)
+                .delete(handlers::schemas::delete),
+        )
+        .route(
+            "/{schema_name}",
+            get(handlers::entities::list).post(handlers::entities::create),
+        )
+        .route(
+            "/{schema_name}/{id}",
+            get(handlers::entities::get)
+                .put(handlers::entities::update)
+                .delete(handlers::entities::delete),
         )
         .route_layer(axum::middleware::from_fn_with_state(
             state.clone(),

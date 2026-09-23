@@ -24,7 +24,7 @@ async fn create_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db, "role-test-schema-create").await;
+    let schema_id = create_schema(&db, "role_test_schema_create").await;
 
     let permissions = HashMap::from([(
         schema_id,
@@ -35,14 +35,13 @@ async fn create_role() {
     )]);
 
     let role_id = repository
-        .create("role-test-create", &permissions)
+        .create("role_test_create", &permissions)
         .await
         .expect("failed to create role");
 
     assert!(role_id.0 > 0);
 
     repository.delete(&role_id).await.unwrap();
-
     SchemaRepository::new(&db.pool)
         .delete(&schema_id)
         .await
@@ -54,9 +53,8 @@ async fn find_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id_1 = create_schema(&db, "role-test-schema-find-1").await;
-
-    let schema_id_2 = create_schema(&db, "role-test-schema-find-2").await;
+    let schema_id_1 = create_schema(&db, "role_test_schema_find_1").await;
+    let schema_id_2 = create_schema(&db, "role_test_schema_find_2").await;
 
     let permissions = HashMap::from([
         (
@@ -76,7 +74,7 @@ async fn find_role() {
     ]);
 
     let role_id = repository
-        .create("role-test-find", &permissions)
+        .create("role_test_find", &permissions)
         .await
         .unwrap();
 
@@ -87,7 +85,7 @@ async fn find_role() {
         .expect("role not found");
 
     assert_eq!(role.id.0, role_id.0);
-    assert_eq!(role.name, "role-test-find");
+    assert_eq!(role.name, "role_test_find");
     assert_eq!(role.permissions.len(), 2);
 
     assert!(role.permissions[&schema_id_1].read);
@@ -97,12 +95,10 @@ async fn find_role() {
     assert!(role.permissions[&schema_id_2].write);
 
     repository.delete(&role_id).await.unwrap();
-
     SchemaRepository::new(&db.pool)
         .delete(&schema_id_1)
         .await
         .unwrap();
-
     SchemaRepository::new(&db.pool)
         .delete(&schema_id_2)
         .await
@@ -124,7 +120,7 @@ async fn delete_role() {
     let db = database().await;
     let repository = RoleRepository::new(&db.pool);
 
-    let schema_id = create_schema(&db, "role-test-schema-delete").await;
+    let schema_id = create_schema(&db, "role_test_schema_delete").await;
 
     let permissions = HashMap::from([(
         schema_id,
@@ -135,14 +131,13 @@ async fn delete_role() {
     )]);
 
     let role_id = repository
-        .create("role-test-delete", &permissions)
+        .create("role_test_delete", &permissions)
         .await
         .unwrap();
 
     repository.delete(&role_id).await.unwrap();
 
     let role = repository.find_by_id(&role_id).await.unwrap();
-
     assert!(role.is_none());
 
     let permissions_count = sqlx::query_scalar!(

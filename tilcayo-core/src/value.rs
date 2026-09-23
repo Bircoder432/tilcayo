@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Value {
     Int(i64),
     Float(f64),
@@ -11,7 +12,7 @@ pub enum Value {
     Object(HashMap<String, Value>),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ValueType {
     Int,
     Float,
@@ -92,13 +93,13 @@ mod tests {
         ]));
 
         assert!(schema.matches(&Value::Object(HashMap::from([
-            ("name".into(), Value::Text("Vadim".into())),
-            ("age".into(), Value::Int(17)),
+            ("name".into(), Value::Text("Vadim".into()),),
+            ("age".into(), Value::Int(17),),
         ]))));
 
         assert!(!schema.matches(&Value::Object(HashMap::from([
-            ("name".into(), Value::Text("Vadim".into())),
-            ("age".into(), Value::Text("17".into())),
+            ("name".into(), Value::Text("Vadim".into()),),
+            ("age".into(), Value::Text("17".into()),),
         ]))));
     }
 
@@ -119,5 +120,27 @@ mod tests {
         ]);
 
         assert!(schema.matches(&value));
+    }
+
+    #[test]
+    fn value_uses_native_json() {
+        let value = Value::Object(HashMap::from([
+            ("username".into(), Value::Text("test".into())),
+            ("role_id".into(), Value::Int(10)),
+        ]));
+
+        let json = serde_json::to_value(&value).expect("failed to serialize value");
+
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "username": "test",
+                "role_id": 10
+            })
+        );
+
+        let value: Value = serde_json::from_value(json).expect("failed to deserialize value");
+
+        assert!(matches!(value, Value::Object(_)));
     }
 }

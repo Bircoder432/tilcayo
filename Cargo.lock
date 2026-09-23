@@ -1929,6 +1929,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "serde",
+ "serde_json",
  "sqlx",
  "tilcayo-auth",
  "tilcayo-core",
@@ -1959,6 +1960,7 @@ name = "tilcayo-core"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
 ]
 
 [[package]]
