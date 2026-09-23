@@ -1,10 +1,21 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT role_id, password_hash\n            FROM users\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT username, role_id, password_hash\n            FROM users\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
+        "name": "username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
         "name": "role_id",
         "type_info": "Int8",
         "origin": {
@@ -15,7 +26,7 @@
         }
       },
       {
-        "ordinal": 1,
+        "ordinal": 2,
         "name": "password_hash",
         "type_info": "Text",
         "origin": {
@@ -33,8 +44,9 @@
     },
     "nullable": [
       false,
+      false,
       false
     ]
   },
-  "hash": "4f819aa8cdc098cb8c54e9e83c4d831b29119fb50a4c76b6282b52c6dc9fec94"
+  "hash": "f569dca6f84b6c300584c3aa9fcf760ba95fca43f4cd5cfa9756ad58cd7e4511"
 }

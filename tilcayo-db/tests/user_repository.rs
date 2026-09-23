@@ -27,7 +27,7 @@ async fn create_user() {
     let repository = UserRepository::new(&db.pool);
 
     let user_id = repository
-        .create(&role_id, password_hash)
+        .create("test-user-create", &role_id, password_hash)
         .await
         .expect("failed to create user");
 
@@ -47,7 +47,10 @@ async fn find_user() {
     let role_id = create_role(&db).await;
     let repository = UserRepository::new(&db.pool);
     let password_hash = "$argon2id$v=19$m=19456,t=2,p=1$test$hash";
-    let user_id = repository.create(&role_id, password_hash).await.unwrap();
+    let user_id = repository
+        .create("test-user-find", &role_id, password_hash)
+        .await
+        .unwrap();
 
     let user = repository
         .find_by_id(&user_id)
@@ -85,7 +88,10 @@ async fn delete_user() {
     let role_id = create_role(&db).await;
     let repository = UserRepository::new(&db.pool);
     let password_hash = "$argon2id$v=19$m=19456,t=2,p=1$test$hash";
-    let user_id = repository.create(&role_id, password_hash).await.unwrap();
+    let user_id = repository
+        .create("test-user-delete", &role_id, password_hash)
+        .await
+        .unwrap();
 
     repository.delete(&user_id).await.unwrap();
 

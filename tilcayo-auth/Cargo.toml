@@ -11,6 +11,10 @@ tilcayo-db.workspace = true
 sqlx = "0.9.0"
 jsonwebtoken.workspace = true
 serde.workspace = true
+getrandom = "0.4.3"
+sha2 = "0.11.0"
+hex = "0.4.3"
+redis = { version = "1.7.0", features = ["tokio-comp"] }
 
 [dev-dependencies]
 tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO users (role_id, password_hash)\n            VALUES ($1, $2)\n            RETURNING id\n            ",
+  "query": "\n            INSERT INTO users (username, role_id, password_hash)\n            VALUES ($1, $2, $3)\n            RETURNING id\n            ",
   "describe": {
     "columns": [
       {
@@ -17,6 +17,7 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Int8",
         "Text"
       ]
@@ -25,5 +26,5 @@
       false
     ]
   },
-  "hash": "c0a10a139f2b47b26a9dc37bfe997a8286d06125db855de65948211fc8c431dc"
+  "hash": "2ccc703f78d45df040dd11a7be6ca876eb72acd1a5c63bd5dd33bce903fcedd7"
 }

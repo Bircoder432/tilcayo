@@ -1,4 +1,4 @@
-use tilcayo_core::{User, UserId};
+use tilcayo_core::User;
 use tilcayo_db::repositories::user::UserRepository;
 
 use crate::password::verify_password;
@@ -14,12 +14,12 @@ impl<'a> AuthService<'a> {
 
     pub async fn authenticate(
         &self,
-        user_id: &UserId,
+        username: &str,
         password: &str,
     ) -> Result<Option<User>, AuthError> {
         let Some(user) = self
             .users
-            .find_by_id(user_id)
+            .find_by_username(username)
             .await
             .map_err(AuthError::Database)?
         else {

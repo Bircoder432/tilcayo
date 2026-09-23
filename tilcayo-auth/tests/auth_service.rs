@@ -1,115 +1,111 @@
-use std::collections::HashMap;
+use tilcayo_auth::password::hash_password;
+use tilcayo_auth::service::AuthService;
+use tilcayo_core::RoleId;
+use tilcayo_db::repositories::{role::RoleRepository, user::UserRepository};
 
-use tilcayo_auth::{password::hash_password, service::AuthService};
-use tilcayo_core::UserId;
-use tilcayo_db::{
-    Database,
-    repositories::{role::RoleRepository, user::UserRepository},
-};
-
-const DATABASE_URL: &str = "postgres://tilcayo:tilcayo@localhost/tilcayo";
-
-#[tokio::test]
-async fn authenticate_with_correct_password() {
-    let database = Database::connect(DATABASE_URL)
+async fn setup() -> (tilcayo_db::Database, RoleId) {
+    let database = tilcayo_db::Database::connect("postgres://tilcayo:tilcayo@localhost/tilcayo")
         .await
         .expect("failed to connect to database");
 
-    let role_repository = RoleRepository::new(&database.pool);
+    let roles = RoleRepository::new(&database.pool);
 
-    let role_id = role_repository
-        .create(&HashMap::new())
+    let permissions = std::collections::HashMap::new();
+
+    let role_id = roles
+        .create(&permissions)
         .await
         .expect("failed to create role");
 
+    (database, role_id)
+}
+
+#[tokio::test]
+async fn authenticate_with_correct_password() {
+    let (database, role_id) = setup().await;
+
+    let username = "auth-test-correct-password";
     let password = "correct password";
 
     let password_hash = hash_password(password).expect("failed to hash password");
 
-    let user_repository = UserRepository::new(&database.pool);
+    let users = UserRepository::new(&database.pool);
 
-    let user_id = user_repository
-        .create(&role_id, &password_hash)
+    let user_id = users
+        .create(&username, &role_id, &password_hash)
         .await
         .expect("failed to create user");
 
-    let auth = AuthService::new(user_repository);
+    let auth = AuthService::new(users);
 
     let user = auth
-        .authenticate(&user_id, password)
+        .authenticate(username, password)
         .await
         .expect("authentication failed")
         .expect("user was not authenticated");
 
     assert_eq!(user.id.0, user_id.0);
-    assert_eq!(user.role_id.0, role_id.0);
+    assert_eq!(user.username, username);
 
-    user_repository
-        .delete(&user_id)
-        .await
-        .expect("failed to delete user");
+    users.delete(&user_id).await.expect("failed to delete user");
 
-    role_repository
-        .delete(&role_id)
-        .await
-        .expect("failed to delete role");
+    database.pool.close().await;
 }
 
 #[tokio::test]
 async fn authenticate_with_wrong_password() {
-    let database = Database::connect(DATABASE_URL)
-        .await
-        .expect("failed to connect to database");
+    let (database, role_id) = setup().await;
 
-    let role_repository = RoleRepository::new(&database.pool);
-
-    let role_id = role_repository
-        .create(&HashMap::new())
-        .await
-        .expect("failed to create role");
+    let username = "auth-test-wrong-password";
 
     let password_hash = hash_password("correct password").expect("failed to hash password");
 
-    let user_repository = UserRepository::new(&database.pool);
+    let users = UserRepository::new(&database.pool);
 
-    let user_id = user_repository
-        .create(&role_id, &password_hash)
+    let user_id = users
+        .create(&username, &role_id, &password_hash)
         .await
         .expect("failed to create user");
 
-    let auth = AuthService::new(user_repository);
+    let auth = AuthService::new(users);
 
     let user = auth
-        .authenticate(&user_id, "wrong password")
+        .authenticate(username, "wrong password")
         .await
         .expect("authentication failed");
 
     assert!(user.is_none());
 
-    user_repository
-        .delete(&user_id)
-        .await
-        .expect("failed to delete user");
+    users.delete(&user_id).await.expect("failed to delete user");
 
-    role_repository
-        .delete(&role_id)
-        .await
-        .expect("failed to delete role");
+    database.pool.close().await;
 }
 
 #[tokio::test]
-async fn authenticate_nonexistent_user() {
-    let database = Database::connect(DATABASE_URL)
-        .await
-        .expect("failed to connect to database");
+async fn authenticate_unknown_username() {
+    let (database, role_id) = setup().await;
 
-    let user_repository = UserRepository::new(&database.pool);
-    let auth = AuthService::new(user_repository);
+    let username = "auth-test-unknown-username";
+
+    let password_hash = hash_password("password").expect("failed to hash password");
+
+    let users = UserRepository::new(&database.pool);
+
+    let user_id = users
+        .create(&username, &role_id, &password_hash)
+        .await
+        .expect("failed to create user");
+
+    let auth = AuthService::new(users);
 
     let user = auth
-        .authenticate(&UserId(999_999_999), "password")
+        .authenticate("unknown-user", "password")
         .await
         .expect("authentication failed");
 
     assert!(user.is_none());
+
+    users.delete(&user_id).await.expect("failed to delete user");
+
+    database.pool.close().await;
 }

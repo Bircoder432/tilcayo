@@ -5,6 +5,7 @@ pub struct UserId(pub usize);
 
 pub struct User {
     pub id: UserId,
+    pub username: String,
     pub role_id: RoleId,
     pub password_hash: String,
 }

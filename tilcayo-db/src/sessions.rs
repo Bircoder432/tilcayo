@@ -82,4 +82,29 @@ impl SessionStore {
 
         Ok(())
     }
+
+    pub async fn update_refresh_token(
+        &self,
+        id: &str,
+        refresh_token_hash: &str,
+        ttl: Duration,
+    ) -> redis::RedisResult<bool> {
+        let mut connection = self.client.get_multiplexed_async_connection().await?;
+
+        let key = format!("session:{id}");
+
+        let exists: bool = connection.exists(&key).await?;
+
+        if !exists {
+            return Ok(false);
+        }
+
+        let _: () = connection
+            .hset(&key, "refresh_token_hash", refresh_token_hash)
+            .await?;
+
+        let _: () = connection.expire(&key, ttl.as_secs() as i64).await?;
+
+        Ok(true)
+    }
 }
